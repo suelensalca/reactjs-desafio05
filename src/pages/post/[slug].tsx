@@ -1,4 +1,5 @@
 import { GetStaticPaths, GetStaticProps } from 'next';
+import { Head } from 'next/document';
 
 import { getPrismicClient } from '../../services/prismic';
 
@@ -26,9 +27,34 @@ interface PostProps {
   post: Post;
 }
 
-// export default function Post() {
-//   // TODO
-// }
+export default function Post() {
+  return (
+    <>
+      <Head>
+        <title>Posts | Desafio 05</title>
+      </Head>
+      <main>
+        <div>
+          <a>
+            <time>20 de Dezembro</time>
+            <strong>Título</strong>
+            <p>Esse é o parágrafo que segue o título</p>
+          </a>
+          <a>
+            <time>20 de Dezembro</time>
+            <strong>Título</strong>
+            <p>Esse é o parágrafo que segue o título</p>
+          </a>
+          <a>
+            <time>20 de Dezembro</time>
+            <strong>Título</strong>
+            <p>Esse é o parágrafo que segue o título</p>
+          </a>
+        </div>
+      </main>
+    </>
+  )
+}
 
 // export const getStaticPaths = async () => {
 //   const prismic = getPrismicClient();
