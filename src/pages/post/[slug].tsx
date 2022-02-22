@@ -36,25 +36,25 @@ interface Post {
 
 interface PostProps {
   post: Post;
-  sugestions?: {
-    previousPost?: {
-      uid: string;
-      data: {
-        title: string;
-      }
-    }[];
-    nextPost?: {
-      uid: string;
-      data: {
-        title: string;
-      }
-    }[];
-  }
+  // sugestions?: {
+  //   previousPost?: {
+  //     uid: string;
+  //     data: {
+  //       title: string;
+  //     }
+  //   }[];
+  //   nextPost?: {
+  //     uid: string;
+  //     data: {
+  //       title: string;
+  //     }
+  //   }[];
+  // }
 }
 
 export default function Post({
   post,
-  sugestions
+  // sugestions
 }: PostProps): JSX.Element {
 
   const router = useRouter();
@@ -117,7 +117,7 @@ export default function Post({
             ))}
           </div>
         </article>
-        <section className={styles.sugestions}>
+        {/* <section className={styles.sugestions}>
           {sugestions.previousPost[0] ? (
             <div>
               <p>{sugestions.previousPost[0].data.title}</p>
@@ -134,7 +134,7 @@ export default function Post({
               </Link>
             </div>
           ) : null}
-        </section>
+        </section> */}
       </main>
     </>
   )
@@ -167,21 +167,21 @@ export const getStaticProps: GetStaticProps = async context => {
   const prismic = getPrismicClient();
   const response = await prismic.getByUID('posts', String(slug), {});
 
-  const previousPost = await prismic.query([
-    Prismic.Predicates.at('document.type', 'posts')
-  ], {
-    pageSize: 1,
-    after: response.id,
-    orderings: '[document.first_publication_date]',
-  });
+  // const previousPost = await prismic.query([
+  //   Prismic.Predicates.at('document.type', 'posts')
+  // ], {
+  //   pageSize: 1,
+  //   after: response.id,
+  //   orderings: '[document.first_publication_date]',
+  // });
 
-  const nextPost = await prismic.query([
-    Prismic.Predicates.at('document.type', 'posts')
-  ], {
-    pageSize: 1,
-    after: response.id,
-    orderings: '[document.first_publication_date desc]',
-  })
+  // const nextPost = await prismic.query([
+  //   Prismic.Predicates.at('document.type', 'posts')
+  // ], {
+  //   pageSize: 1,
+  //   after: response.id,
+  //   orderings: '[document.first_publication_date desc]',
+  // })
 
   const post: Post = {
     uid: response.uid,
@@ -195,15 +195,15 @@ export const getStaticProps: GetStaticProps = async context => {
     }
   }
 
-  const sugestions = {
-    previousPost: previousPost?.results,
-    nextPost: nextPost?.results,
-  }
+  // const sugestions = {
+  //   previousPost: previousPost?.results,
+  //   nextPost: nextPost?.results,
+  // }
 
   return {
     props: {
       post,
-      sugestions
+      // sugestions
     },
     revalidate: 60 * 30, //30 minutes
   }
