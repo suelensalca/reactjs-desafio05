@@ -11,11 +11,13 @@ import { RichText } from 'prismic-dom';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
 
 interface Post {
   uid: string;
   first_publication_date: string | null;
-  last_publication_date: string | null;
   data: {
     title: string;
     subtitle: string;
@@ -28,14 +30,13 @@ interface Post {
       body: {
         text: string;
       }[];
-      count: number;
     }[];
   };
 }
 
 interface PostProps {
   post: Post;
-  sugestions: {
+  sugestions?: {
     previousPost?: {
       uid: string;
       data: {
@@ -54,7 +55,7 @@ interface PostProps {
 export default function Post({
   post,
   sugestions
-}: PostProps) {
+}: PostProps): JSX.Element {
 
   const router = useRouter();
 
@@ -83,29 +84,36 @@ export default function Post({
       <Head>
         <title>{post.data.title} | spacetraveling</title>
       </Head>
-      <main className={styles.container}>
-        <img
-          src={post.data.banner.url}
-          alt="banner"
-        />
+      <main className={commonStyles.container}>
+        <section className={styles.banner}>
+          <img
+            src={post.data.banner.url}
+            alt="banner"
+          />
+        </section>
         <article className={styles.post}>
           <h1>{post.data.title}</h1>
           <div className={styles.info}>
-            <time><FiCalendar size={20}/> {post.first_publication_date}</time>
+            <time><FiCalendar size={20}/>
+             {format(
+               parseISO(post.first_publication_date),
+               'dd MMM yyyy',
+               {locale: ptBR}
+               )}
+            </time>
             <span><FiUser size={20} /> {post.data.author}</span>
             <span><FiClock size={20} /> {`${readTime} min`}</span>
           </div>
           <div className={styles.postContent}>
-            <p>{post.data.subtitle}</p>
             {post.data.content.map(postContent => (
-              <>
-                <h2 key={post.uid}>{postContent.heading}</h2>
+              <div key={post.uid}>
+                <h2>{postContent.heading}</h2>
                 <div
                   dangerouslySetInnerHTML={{
                     __html: RichText.asHtml(postContent.body),
                   }}
                 />
-              </>
+              </div>
             ))}
           </div>
         </article>
@@ -177,16 +185,7 @@ export const getStaticProps: GetStaticProps = async context => {
 
   const post: Post = {
     uid: response.uid,
-    first_publication_date: new Date(response.first_publication_date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    }),
-    last_publication_date: new Date(response.last_publication_date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    }),
+    first_publication_date: response.first_publication_date,
     data: {
       title: response.data.title,
       subtitle: response.data.subtitle,
