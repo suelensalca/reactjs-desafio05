@@ -1,7 +1,8 @@
 import { GetStaticProps } from 'next';
 import Head from 'next/head';
 import Prismic from '@prismicio/client';
-import { FiCalendar, FiUser } from 'react-icons/fi'
+import { FiCalendar, FiUser } from 'react-icons/fi';
+import Link from 'next/link';
 
 import { getPrismicClient } from '../services/prismic';
 
@@ -42,12 +43,14 @@ export default function Home({
       <main className={styles.container}>
         <div className={styles.postlist}>
           {posts.map(post => (
-            <a key={post.uid} href="#">
-              <strong>{post.data.title}</strong>
-              <p>{post.data.subtitle}</p>
-              <time><FiCalendar size={20}/>{post.first_publication_date}</time>
-              <span><FiUser size={20} />{post.data.author}</span>
-          </a>
+            <Link href={`/post/${post.uid}`}>
+              <a key={post.uid}>
+                <strong>{post.data.title}</strong>
+                <p>{post.data.subtitle}</p>
+                <time><FiCalendar size={20}/>{post.first_publication_date}</time>
+                <span><FiUser size={20} />{post.data.author}</span>
+              </a>
+            </Link>
           ))}
 
           {postsPagination.next_page && (
@@ -72,7 +75,7 @@ export default function Home({
   )
 }
 
-export const getStaticProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient();
   const postsResponse = await prismic.query([
     Prismic.predicates.at('document.type', 'posts')

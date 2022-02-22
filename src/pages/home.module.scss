@@ -45,4 +45,13 @@
       color: var(--highlight);
     }
   }
+
+  button {
+    background: transparent;
+    border: 0;
+    margin: 4rem 0;
+    font-size: 1.12rem;
+    font-weight: 600;
+    color: var(--highlight);
+  }
 }

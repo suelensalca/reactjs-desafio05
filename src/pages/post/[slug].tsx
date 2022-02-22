@@ -1,15 +1,24 @@
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { Head } from 'next/document';
 
+import Prismic from '@prismicio/client';
 import { getPrismicClient } from '../../services/prismic';
+
+import { FiCalendar, FiUser, FiClock } from 'react-icons/fi'
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
+import { RichText } from 'prismic-dom';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import Link from 'next/link';
 
 interface Post {
+  uid: string;
   first_publication_date: string | null;
+  last_publication_date: string | null;
   data: {
     title: string;
+    subtitle: string;
     banner: {
       url: string;
     };
@@ -19,53 +28,184 @@ interface Post {
       body: {
         text: string;
       }[];
+      count: number;
     }[];
   };
 }
 
 interface PostProps {
   post: Post;
+  sugestions: {
+    previousPost?: {
+      uid: string;
+      data: {
+        title: string;
+      }
+    }[];
+    nextPost?: {
+      uid: string;
+      data: {
+        title: string;
+      }
+    }[];
+  }
 }
 
-export default function Post() {
+export default function Post({
+  post,
+  sugestions
+}: PostProps) {
+
+  const router = useRouter();
+
+  if (router.isFallback) {
+    return <h2>Carregando...</h2>
+  }
+
+  const totalWords = post.data.content.reduce((total, contentItem) => {
+    let count = 0;
+    count += contentItem.heading.split(' ').length;
+
+    const wordsCounter = contentItem.body.map(
+      item => item.text.split(' ').length
+    );
+    wordsCounter.map(words => (count += words));
+
+    total += count;
+
+    return total;
+  }, 0);
+
+  const readTime = Math.ceil(totalWords / 200);
+
   return (
     <>
       <Head>
-        <title>Posts | Desafio 05</title>
+        <title>{post.data.title} | spacetraveling</title>
       </Head>
-      <main>
-        <div>
-          <a>
-            <time>20 de Dezembro</time>
-            <strong>Título</strong>
-            <p>Esse é o parágrafo que segue o título</p>
-          </a>
-          <a>
-            <time>20 de Dezembro</time>
-            <strong>Título</strong>
-            <p>Esse é o parágrafo que segue o título</p>
-          </a>
-          <a>
-            <time>20 de Dezembro</time>
-            <strong>Título</strong>
-            <p>Esse é o parágrafo que segue o título</p>
-          </a>
-        </div>
+      <main className={styles.container}>
+        <img
+          src={post.data.banner.url}
+          alt="banner"
+        />
+        <article className={styles.post}>
+          <h1>{post.data.title}</h1>
+          <div className={styles.info}>
+            <time><FiCalendar size={20}/> {post.first_publication_date}</time>
+            <span><FiUser size={20} /> {post.data.author}</span>
+            <span><FiClock size={20} /> {`${readTime} min`}</span>
+          </div>
+          <div className={styles.postContent}>
+            <p>{post.data.subtitle}</p>
+            {post.data.content.map(postContent => (
+              <>
+                <h2 key={post.uid}>{postContent.heading}</h2>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: RichText.asHtml(postContent.body),
+                  }}
+                />
+              </>
+            ))}
+          </div>
+        </article>
+        <section className={styles.sugestions}>
+          {sugestions.previousPost[0] ? (
+            <div>
+              <p>{sugestions.previousPost[0].data.title}</p>
+              <Link href={`/post/${sugestions.previousPost[0].uid}`}>
+                <a>Post anterior</a>
+              </Link>
+            </div>
+          ) : null}
+          {sugestions.nextPost[0] ? (
+            <div>
+              <p>{sugestions.nextPost[0].data.title}</p>
+              <Link href={`/post/${sugestions.nextPost[0].uid}`}>
+                <a>Próximo post</a>
+              </Link>
+            </div>
+          ) : null}
+        </section>
       </main>
     </>
   )
 }
 
-// export const getStaticPaths = async () => {
-//   const prismic = getPrismicClient();
-//   const posts = await prismic.query(TODO);
+export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient();
 
-//   // TODO
-// };
+  const posts = await prismic.query([
+    Prismic.predicates.at('document.type', 'posts')
+  ]);
 
-// export const getStaticProps = async context => {
-//   const prismic = getPrismicClient();
-//   const response = await prismic.getByUID(TODO);
+  const paths = posts.results.map(post => {
+    return {
+      params: {
+        slug: post.uid,
+      }
+    }
+  })
 
-//   // TODO
-// };
+  return {
+    paths,
+    fallback: true,
+  }
+};
+
+export const getStaticProps: GetStaticProps = async context => {
+  const { slug } = context.params;
+
+  const prismic = getPrismicClient();
+  const response = await prismic.getByUID('posts', String(slug), {});
+
+  const previousPost = await prismic.query([
+    Prismic.Predicates.at('document.type', 'posts')
+  ], {
+    pageSize: 1,
+    after: response.id,
+    orderings: '[document.first_publication_date]',
+  });
+
+  const nextPost = await prismic.query([
+    Prismic.Predicates.at('document.type', 'posts')
+  ], {
+    pageSize: 1,
+    after: response.id,
+    orderings: '[document.first_publication_date desc]',
+  })
+
+  const post: Post = {
+    uid: response.uid,
+    first_publication_date: new Date(response.first_publication_date).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }),
+    last_publication_date: new Date(response.last_publication_date).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }),
+    data: {
+      title: response.data.title,
+      subtitle: response.data.subtitle,
+      banner:  response.data.banner,
+      author: response.data.author,
+      content: response.data.content,
+    }
+  }
+
+  const sugestions = {
+    previousPost: previousPost?.results,
+    nextPost: nextPost?.results,
+  }
+
+  return {
+    props: {
+      post,
+      sugestions
+    },
+    revalidate: 60 * 30, //30 minutes
+  }
+};
