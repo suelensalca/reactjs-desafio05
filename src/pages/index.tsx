@@ -76,8 +76,7 @@ export default function Home({
               <a key={post.uid}>
                 <strong>{post.data.title}</strong>
                 <p>{post.data.subtitle}</p>
-                <time><FiCalendar size={20}/>
-                 {format(
+                <time><FiCalendar size={20}/> {format(
                    new Date(post.first_publication_date),
                    'dd MMM yyyy',
                    {locale: ptBR}
